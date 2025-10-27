@@ -1,39 +1,24 @@
-# Documentação Técnica
+# Teste Engenheiro de Dados — Pipeline BigQuery
 
-Este diretório reúne a documentação técnica do desafio, cobrindo visão da solução, execução, decisões técnicas, arquitetura visual, dicionário de dados e otimizações sugeridas.
+Este projeto implementa um pipeline de dados em 3 camadas (RAW → Curated → Analytics) no BigQuery, com scripts Python e um runner simples para executar tudo de ponta a ponta.
 
-- Visão geral e execução rápida: veja abaixo
-- Dicionário de dados: consulte `docs/dicionario_dados.md`
-- Otimizações e próximos passos: consulte `docs/otimizacoes.md`
-- Diagrama de arquitetura (Mermaid): `docs/diagrama_arquitetura.mmd` (renderizado também neste README)
+- Documentação técnica completa: veja `docs/README.md`
+- Dicionário de dados: `docs/dicionario_dados.md`
+- Otimizações e próximos passos: `docs/otimizacoes.md`
+- Diagrama de arquitetura (Mermaid): `docs/diagrama_arquitetura.mmd`
 
-## Visão geral da solução
+## Arquitetura visual
+![arquitetura](image.png)
 
-A solução implementa um pipeline simples em 3 camadas no BigQuery:
+[Arquitetura_em_pdf](Arquitetura_de_Data_Lake_Python.pdf)
 
-- RAW (psa_raw): carrega os arquivos da pasta `dados/` quase “como vieram” (CSV, TXT, JSON, XML/HTML)
-- Curated (psa_curated): padroniza nomes de colunas, normaliza nulos, converte datas, de-duplica chaves e, quando necessário, “achata” estruturas (ex.: tarefas de projetos)
-- Analytics (psa_analytics): agrega tabelas de curated e produz visões analíticas (fatos/dimensões mínimas)
-
-Todos os scripts residem em `scripts/` e há um orquestrador simples (`run_all.py`) que executa na ordem RAW → Curated → Analytics.
-
-Principais decisões e padrões:
-
-- Colunas em snake_case e strings trimadas
-- Nulos padronizados e chaves obrigatórias não nulas em curated
-- Datas como tipos nativos (DATE/TIMESTAMP) sempre que possível
-- Flatten JSON via `pandas.json_normalize` (Opção A: linha por tarefa, duplicando metadados do projeto)
-- IO centralizado em `utils_bq.py` (ler/escrever DataFrame ↔ BigQuery)
-
-## Como executar
-
-Pré-requisitos:
+## Pré-requisitos
 
 - Python 3.11+ (testado com 3.12)
 - Projeto GCP com BigQuery habilitado
-- Credenciais: `cred.json` na raiz (ou `GOOGLE_APPLICATION_CREDENTIALS` no ambiente)
+- Credenciais: arquivo `cred.json` na raiz (ou `GOOGLE_APPLICATION_CREDENTIALS` no ambiente)
 
-Instalação:
+## Instalação
 
 ```bash
 python3 -m venv .venv-gcp
@@ -42,118 +27,123 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Execução completa (todas as camadas):
+## Como executar
+
+### Rodar as etapas manualmente (RAW → Curated → Analytics):
 
 ```bash
-# usando a venv do projeto
-./.venv-gcp/bin/python scripts/run_all.py
+# RAW
+./.venv-gcp/bin/python scripts/clientes_raw.py
+./.venv-gcp/bin/python scripts/analises_tributarias_raw.py
+./.venv-gcp/bin/python scripts/notas_fiscais_raw.py
+./.venv-gcp/bin/python scripts/tarefas_projetos_raw.py
+./.venv-gcp/bin/python scripts/logs_sistema.py
+
+# Curated
+./.venv-gcp/bin/python scripts/clientes_curated.py
+./.venv-gcp/bin/python scripts/analises_tributarias_curated.py
+./.venv-gcp/bin/python scripts/notas_fiscais_curated.py
+./.venv-gcp/bin/python scripts/logs_sistema_curated.py
+./.venv-gcp/bin/python scripts/tarefas_projetos_curated.py
+
+# Analytics
+./.venv-gcp/bin/python scripts/resumo_clientes_tributos.py
+./.venv-gcp/bin/python scripts/performance_projetos.py
 ```
 
-Execução por grupo (opcional):
+### Rodar as etapas agendadas
 
-```bash
-# RAW apenas
-RUN_GROUP=raw ./.venv-gcp/bin/python scripts/run_all.py
-# Curated apenas
-RUN_GROUP=curated ./.venv-gcp/bin/python scripts/run_all.py
-# Analytics apenas
-RUN_GROUP=analytics ./.venv-gcp/bin/python scripts/run_all.py
-```
 
-Variáveis de ambiente relevantes (com defaults no runner):
-
-- RAW_DATASET_ID=psa_raw
-- PROCESSED_DATASET_ID=psa_curated
-- ANALYTICS_DATASET_ID=psa_analytics
-- TABLE_CLIENTES=clientes
-- TABLE_ANALISES_TRIBUTARIAS=analises_tributarias
-- TABLE_NOTAS=notas_fiscais
-- TABLE_TAREFAS=tarefas_projetos
-- RAW_TABLE_ANALISES=analises_tributarias
-- RAW_TABLE_TAREFAS=tarefas_projetos
-- RAW_TABLE_NOTAS=notas_fiscais_raw
-- SOURCE_PATH_CLIENTES=dados/dados_clientes.csv
-- SOURCE_PATH_ANALISES=dados/analises_tributarias.txt
-- SOURCE_PATH_NOTAS=dados/notas_fiscais.xml
-- SOURCE_PATH_TAREFAS=dados/tarefas_projetos.json
-
-O runner tenta criar os datasets ausentes no início. As tabelas são criadas automaticamente via `autodetect` durante os loads.
-
-## Decisões técnicas (justificadas)
-
-- Separação RAW/Curated/Analytics: desacopla ingestão de limpezas e das visões analíticas; facilita reprocessamento e governança
-- RAW “quase igual à origem”: mantém rastreabilidade e reprodutibilidade
-- Curated limpo e consistente: evita joins quebrando por espaços/acentos/maiúsculas diferentes; chaves e datas coerentes
-- JSON flatten (tarefas): adotado formato linha por tarefa (Opção A) para facilitar métricas de produtividade e status
-- Datas como DATE/TIMESTAMP: formatação (ISO) fica a cargo do consumo; evita ambiguidade de string
-- BigQuery IO centralizado: reduz duplicação e garante comportamento consistente de escrita/leitura
-- Agregações Analytics minimalistas: apenas o necessário ao problema (resumo de tributos por cliente e performance de projetos)
-
-## Estrutura de pastas (resumo)
+## Estrutura de diretório e aquivos
 
 ```text
-cred.json
-README.md
-requirements.txt
-dados/
-  analises_tributarias.txt
-  dados_clientes.csv
-  logs_sistema.html
-  notas_fiscais.xml
-  tarefas_projetos.json
-docs/
-  README.md
-  dicionario_dados.md
-  otimizacoes.md
-  diagrama_arquitetura.mmd
-scripts/
-  run_all.py
-  utils_bq.py
-  utils_curated.py
-  clientes_raw.py
-  analises_tributarias_raw.py
-  notas_fiscais_raw.py
-  tarefas_projetos_raw.py
-  logs_sistema.py
-  clientes_curated.py
-  analises_tributarias_curated.py
-  notas_fiscais_curated.py
-  logs_sistema_curated.py
-  tarefas_projetos_curated.py
-  resumo_clientes_tributos.py
-  performance_projetos.py
+dados/                  # fontes CSV/TXT/JSON/XML/HTML
+docs/                   # documentação técnica, dicionário, diagrama
+scripts/                # scripts de ingestão, transformação e analytics
+  run_all.py            # executa todos os fontes para analises
+  utils_bq.py           # utilitários de IO BigQuery (ler/escrever DataFrame)
+  utils_curated.py      # funções de limpeza/normalização
+  *_raw.py              # cargas RAW para BigQuery
+  *_curated.py          # limpezas/flatten e criação da camada curated
+  resumo_* / performance_*  # tabelas analytics
 ```
 
-## Diagrama de arquitetura (Mermaid)
+# 🧭 Resumo Executivo
 
-```mermaid
-flowchart LR
-  subgraph Local
-    A[Arquivos em dados/\nCSV | TXT | JSON | XML/HTML]
-  end
+Este projeto foi desenvolvido com o objetivo de demonstrar pensamento crítico, visão arquitetural e boas práticas de engenharia de dados, aplicadas a um cenário de iniciação de projetos em uma empresa com potencial de expansão rápida.
+Todas as decisões técnicas foram tomadas com base em experiências anteriores, melhores práticas do mercado e no contexto real de operação de times de dados, equilibrando eficiência, custo e escalabilidade.
+A solução proposta entrega uma estrutura funcional, modular e aderente a padrões modernos de mercado (como arquitetura medalhão e uso do BigQuery) — com espaço planejado para evoluções estruturadas, sem comprometer a manutenção ou o crescimento futuro do ambiente.
 
-  A -->|load| R1[(psa_raw.clientes)]
-  A -->|load| R2[(psa_raw.analises_tributarias)]
-  A -->|load| R3[(psa_raw.tarefas_projetos)]
-  A -->|load| R4[(psa_raw.logs_sistema)]
-  A -->|load| R5[(psa_raw.notas_fiscais_raw/notas_fiscais)]
 
-  R1 --> C1[(psa_curated.clientes)]
-  R2 --> C2[(psa_curated.analises_tributarias)]
-  R3 --> C3[(psa_curated.tarefas_projetos)]
-  R4 --> C4[(psa_curated.logs_sistema)]
-  R5 --> C5[(psa_curated.notas_fiscais)]
+## 🧩 Decisões Técnicas Justificadas  
+Durante o desenvolvimento, foram consideradas múltiplas abordagens baseadas em **projetos e estudos anteriores**, sempre ponderando o **momento atual da empresa** — com um **time pequeno**, mas com **potencial de crescimento acelerado**.  
 
-  C1 & C2 --> A1[(psa_analytics.resumo_clientes_tributos)]
-  C3 --> A2[(psa_analytics.performance_projetos)]
+Reforça-se que **quanto maior o entendimento do negócio**, melhor é a capacidade do time de **propor soluções de dados alinhadas à estratégia corporativa**.
 
-  subgraph Execução
-    X[Runner scripts/run_all.py]\nOrdem: RAW -> Curated -> Analytics
-  end
+---
 
-  X -.-> R1
-  X -.-> C1
-  X -.-> A1
-```
+## ⚠️ Erros e Faltas  
+O foco principal desta entrega foi **demonstrar pensamento crítico por meio do código**, apresentando uma **versão funcional**, ainda que **em estágio de testes**.  
+Portanto, é natural que existam **pontos de melhoria**, os quais podem ser **identificados, classificados e resolvidos** em versões futuras.  
 
-Observação: o arquivo-fonte do diagrama está em `docs/diagrama_arquitetura.mmd`. Para exportar para PNG, você pode usar a extensão Mermaid do VS Code ou o CLI `mmdc`.
+Em relação às entregas opcionais, a **ausência de alguns arquivos** — como o solicitado `pipeline_ingestao.py` — **impediria o funcionamento completo da programação funcional**, motivo pelo qual foi descontinuado decisão esse que pode ser revertida de acordo com o avanço do projeto.
+
+---
+
+## 🏗️ Arquitetura Medalhão  
+Como solicitado, foi adotada a **arquitetura medalhão (Bronze, Silver e Gold)**, reconhecida como uma das **melhores práticas atuais para tratamento e organização de dados**.  
+
+Seguindo uma recomendação acertada, foi utilizado o **BigQuery**, recurso em nuvem do Google, **via API oficial da ferramenta**.  
+Essa decisão **evita riscos de vendor lock-in** e garante **sustentabilidade e flexibilidade tecnológica** para futuras evoluções.  
+
+No modelo de ingestão:  
+- O formato **JSON semi-estruturado** foi o único armazenado em sua forma nativa na camada *raw*.  
+- Embora o BigQuery seja capaz de inferir o *schema* automaticamente, os **demais formatos tabulares foram salvos diretamente como tabelas**.  
+- Essa abordagem **facilita o acesso aos dados na camada *raw*** e **reduz custos de reprocessamento e duplicidade**.
+
+---
+
+## 🧠 Programação Funcional  
+Foi escolhida a abordagem de **programação baseada em funções**, que traz diversas vantagens:  
+
+- ♻️ **Reaproveitamento de código**  
+- 🧩 **Manutenção centralizada e simplificada**  
+- ⚡ **Maior agilidade nas entregas**  
+
+Como exemplo, há **scripts com cerca de 15 linhas** capazes de executar **etapas completas de processamento**, demonstrando **eficiência e clareza** no desenvolvimento.
+
+---
+
+## ✅ Boas Práticas  
+Foram criadas **rotinas padronizadas**, contemplando:  
+
+- 🐍 **Nomes de colunas** no padrão *snake_case* em todas as camadas;  
+- ⚙️ **Tratamento de valores nulos**, tipagens e chaves primárias;  
+- 🪵 **Rotina de logs robusta**, com **rotação de arquivos** e **classificação de mensagens**.  
+
+As **boas práticas do padrão PEP8** foram consideradas, mas aplicadas de forma **flexível**, visando **equilíbrio entre padronização e produtividade**, especialmente em **times enxutos**.  
+
+As **rotinas automatizadas de teste** também podem reforçar esses padrões, realizando:  
+- 🔠 Ordenação automática de *imports* em ordem alfabética;  
+- 🧾 Quebra de linhas com mais de 70 caracteres;  
+- 🔒 Validação de segurança (como **detecção de senhas expostas** no código-fonte);  
+- 🧪 Outras verificações automáticas de **qualidade e segurança**.
+
+---
+
+## 📊 Utilização de DataFrames  
+Foi priorizada a utilização de **tabelas baseadas em DataFrames** (Pandas ou BigQuery), pois essas estruturas:  
+- **Simplificam o tratamento de dados**;  
+- Mantêm **compatibilidade com consultas SQL**;  
+- Garantem **flexibilidade** e **eficiência** tanto para **processamento em Python** quanto para **análises declarativas**.
+
+---
+
+## 🚀 Próximos Passos e Melhorias Sugeridas  
+
+- 🐳 **Definir um ambiente padrão de desenvolvimento** utilizando containers **Docker**, **Terraform** ou ambientes colaborativos como **Google Colab**;  
+- 🧱 **Refatorar o código-fonte** aplicando **Programação Orientada a Objetos (POO)** para maior **modularização** e **escalabilidade**;  
+- 🔐 **Ajustar permissões de acesso** conforme áreas e perfis, seguindo o **Princípio do Menor Privilégio (Principle of Least Privilege)**;  
+- 🧪 **Implementar rotinas automatizadas de testes**, garantindo **qualidade**, **rastreabilidade** e **estabilidade contínua** nas entregas.
+
+---
