@@ -5,7 +5,6 @@ from pathlib import Path
 import sys
 from dotenv import load_dotenv
 from google.cloud import bigquery
-import bigframes.pandas as bf
 from google.api_core.exceptions import NotFound
 import logging
 import pandas as pd

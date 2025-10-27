@@ -65,8 +65,20 @@ scripts/                # scripts de ingestão, transformação e analytics
   utils_curated.py      # funções de limpeza/normalização
   *_raw.py              # cargas RAW para BigQuery
   *_curated.py          # limpezas/flatten e criação da camada curated
-  resumo_* / performance_*  # tabelas analytics
+tests/                  # diretórios fontes de testes
+  tests_*               # fontes de testes
 ```
+
+## Testes (pytest)
+
+Execute os testes:
+
+```bash
+pytest -v tests/test_clientes_raw.py
+```
+
+O foco do teste e demonstrar a compatibilidade do projeto com rotinas de testes, o fontes `tests_clientes_raw.py` uma vez que o projeto foi baseados em tabelas(dataframes), podemos facilmente comparar tabelas "sujas" com tabelas tratadas.
+
 
 # 🧭 Resumo Executivo
 
@@ -144,6 +156,6 @@ Foi priorizada a utilização de **tabelas baseadas em DataFrames** (Pandas ou B
 - 🐳 **Definir um ambiente padrão de desenvolvimento** utilizando containers **Docker**, **Terraform** ou ambientes colaborativos como **Google Colab**;  
 - 🧱 **Refatorar o código-fonte** aplicando **Programação Orientada a Objetos (POO)** para maior **modularização** e **escalabilidade**;  
 - 🔐 **Ajustar permissões de acesso** conforme áreas e perfis, seguindo o **Princípio do Menor Privilégio (Principle of Least Privilege)**;  
-- 🧪 **Implementar rotinas automatizadas de testes**, garantindo **qualidade**, **rastreabilidade** e **estabilidade contínua** nas entregas.
+- 🧪 **Melhorar rotinas automatizadas de testes**, garantindo **qualidade**, **rastreabilidade** e **estabilidade contínua** nas entregas.
 
 ---

@@ -1,8 +1,6 @@
 pandas==2.2.2
 pyarrow==15.0.2
 google-cloud-bigquery==3.25.0
-bigframes==1.6.0
-google-cloud-storage==2.18.2
 google-auth==2.35.0
 python-dotenv==1.0.1
 lxml==5.3.0
