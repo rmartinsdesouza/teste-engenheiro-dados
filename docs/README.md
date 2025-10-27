@@ -53,6 +53,20 @@ pip install -r requirements.txt
 
 ### Rodar as etapas agendadas
 
+Agendamento simples usando a biblioteca Python `schedule` já está disponível neste projeto.
+
+- Para executar o agendador (roda em loop):
+
+```bash
+python scripts/schedule_runner.py
+```
+
+- No Linux em backgound
+
+```bash
+nohup python scripts/schedule_runner.py > logs/scheduler.log 2>&1 &
+```
+
 
 ## Estrutura de diretório e aquivos
 
@@ -79,13 +93,11 @@ pytest -v tests/test_clientes_raw.py
 
 O foco do teste e demonstrar a compatibilidade do projeto com rotinas de testes, o fontes `tests_clientes_raw.py` uma vez que o projeto foi baseados em tabelas(dataframes), podemos facilmente comparar tabelas "sujas" com tabelas tratadas.
 
-
 # 🧭 Resumo Executivo
 
 Este projeto foi desenvolvido com o objetivo de demonstrar pensamento crítico, visão arquitetural e boas práticas de engenharia de dados, aplicadas a um cenário de iniciação de projetos em uma empresa com potencial de expansão rápida.
 Todas as decisões técnicas foram tomadas com base em experiências anteriores, melhores práticas do mercado e no contexto real de operação de times de dados, equilibrando eficiência, custo e escalabilidade.
 A solução proposta entrega uma estrutura funcional, modular e aderente a padrões modernos de mercado (como arquitetura medalhão e uso do BigQuery) — com espaço planejado para evoluções estruturadas, sem comprometer a manutenção ou o crescimento futuro do ambiente.
-
 
 ## 🧩 Decisões Técnicas Justificadas  
 Durante o desenvolvimento, foram consideradas múltiplas abordagens baseadas em **projetos e estudos anteriores**, sempre ponderando o **momento atual da empresa** — com um **time pequeno**, mas com **potencial de crescimento acelerado**.  
@@ -136,7 +148,7 @@ Foram criadas **rotinas padronizadas**, contemplando:
 As **boas práticas do padrão PEP8** foram consideradas, mas aplicadas de forma **flexível**, visando **equilíbrio entre padronização e produtividade**, especialmente em **times enxutos**.  
 
 As **rotinas automatizadas de teste** também podem reforçar esses padrões, realizando:  
-- 🔠 Ordenação automática de *imports* em ordem alfabética;  
+- 🔠 Ordenação automática de *imports* em ordem alfabética;
 - 🧾 Quebra de linhas com mais de 70 caracteres;  
 - 🔒 Validação de segurança (como **detecção de senhas expostas** no código-fonte);  
 - 🧪 Outras verificações automáticas de **qualidade e segurança**.
